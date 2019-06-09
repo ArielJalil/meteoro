@@ -5,4 +5,9 @@ Python practice
 
 This project requires Python 3 and the requests package
 
-`python3 meteor_landing.p`
+First, install pipenv. Then:
+
+...
+pipenv install
+pipenv run "python meteor_landing.py"
+...
