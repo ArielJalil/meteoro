@@ -1,0 +1,45 @@
+kind: pipeline      # What kind of script - usually pipeline
+name: production    # A descriptive name if the whole pipeline
+when:               # Only run the pipeline when it's a push to master
+  event: [ push ]
+  branch: [ master ]
+
+# At the time of this writing there was an issue with latest commit not
+# being pulled correctly. This fixes it but you may not need it.
+clone:
+  git:
+    image: plugins/git
+    pull: true
+
+steps:              # Categorize each step
+  - name: build     # Name of the categorized step
+    image: ruby     # Use an image for each language used
+    commands:       # Custom bash scripts used for building the project
+      - gem install bundler
+      - bundle install
+      - export JEKYLL_ENV=production
+      - bundle exec jekyll build
+
+  # Deploy step using an Rsync plugin for updating files on remote server.
+  # "settings" property is for plugin specific config
+  - name: deploy
+    image: drillster/drone-rsync
+    settings:
+      hosts:
+        from_secret: deploy_host
+      port:
+        from_secret: deploy_port
+      user:
+        from_secret: deploy_user
+      key:
+        from_secret: deploy_key
+      target:
+        from_secret: deploy_target
+      source: /drone/src/_site/*
+      exclude:          # Optional to exclude some files or directories
+        - "README.md"
+      recursive: true   # Update files recursively on remote, needed if directories
+      delete: true      # Remove remote files not present on client side
+      script:           # Run optional remote scripts after rsync is completed
+        - cd ~/scripts
+        - sh run_my_script.sh
